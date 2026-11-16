@@ -142,16 +142,17 @@ def generate_wifi_password(length=8):
     if length < 8:
         raise ValueError("Длина пароля должна быть не меньше 8 символов")
 
-    lowercase = random.choice(string.ascii_lowercase)
-    uppercase = random.choice(string.ascii_uppercase)
-    digit = random.choice(string.digits)
+    rng = random.SystemRandom()  # криптостойкий генератор для паролей
+    lowercase = rng.choice(string.ascii_lowercase)
+    uppercase = rng.choice(string.ascii_uppercase)
+    digit = rng.choice(string.digits)
 
     all_chars = string.ascii_letters + string.digits
-    remaining = ''.join(random.choice(all_chars) for _ in range(length - 3))
+    remaining = ''.join(rng.choice(all_chars) for _ in range(length - 3))
 
     password = lowercase + uppercase + digit + remaining
     password_list = list(password)
-    random.shuffle(password_list)
+    rng.shuffle(password_list)
     return ''.join(password_list)
 
 
@@ -180,6 +181,8 @@ def format_receipt(drink_name, quantity):
         ValueError: если название пустое / не строка / нет в меню,
                     или количество — не целое число больше 0
     """
+    if not isinstance(drink_name, str):
+        raise ValueError("Название напитка должно быть строкой")
     if not drink_name:
         raise ValueError("Название напитка не может быть пустым")
     # get_price сам проверит тип и наличие в меню

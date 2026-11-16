@@ -3,10 +3,10 @@
 Запуск:
     python -m unittest test_coffee.py -v
 """
-import contextlib
-import importlib
-import io
+import os
 import string
+import subprocess
+import sys
 import unittest
 from unittest import mock
 
@@ -279,6 +279,13 @@ class FormatReceiptTestCase(unittest.TestCase):
         with self.assertRaises(ValueError):
             format_receipt(["latte"], 1)
 
+    def test_number_name_message_is_about_type(self):
+        # для 0 и [] сообщение должно говорить про тип, а не "пустое"
+        for bad in (0, []):
+            with self.subTest(name=bad):
+                with self.assertRaisesRegex(ValueError, "строкой"):
+                    format_receipt(bad, 1)
+
     def test_zero_quantity(self):
         # чек на 0 напитков на 0 рублей не имеет смысла
         with self.assertRaises(ValueError):
@@ -307,10 +314,14 @@ class FormatReceiptTestCase(unittest.TestCase):
 class ModuleTestCase(unittest.TestCase):
     def test_import_has_no_side_effects(self):
         # при импорте модуль не должен ничего печатать в stdout
-        buffer = io.StringIO()
-        with contextlib.redirect_stdout(buffer):
-            importlib.reload(coffee)
-        self.assertEqual(buffer.getvalue(), "")
+        # отдельный процесс: не влияет на остальные тесты
+        folder = os.path.dirname(os.path.abspath(__file__))
+        result = subprocess.run(
+            [sys.executable, "-c", "import coffee"],
+            cwd=folder, capture_output=True, text=True,
+        )
+        self.assertEqual(result.returncode, 0)
+        self.assertEqual(result.stdout, "")
 
     def test_menu_prices_are_positive(self):
         self.assertTrue(all(isinstance(p, int) and p > 0 for p in MENU.values()))
